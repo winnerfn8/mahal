@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mahfil-e-Motijheel | Room Service</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .modal-overlay { background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+        .success-accent { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
+        .veg-icon { border: 2px solid #16a34a; padding: 2px; border-radius: 2px; display: inline-block; line-height: 0; }
+        .non-veg-icon { border: 2px solid #dc2626; padding: 2px; border-radius: 2px; display: inline-block; line-height: 0; }
+        .dot { height: 8px; width: 8px; border-radius: 50%; display: block; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+    <div id="app" class="min-h-screen w-full flex items-center justify-center p-0 md:p-4">
+        <div id="main-content" class="w-full max-w-full lg:max-w-6xl flex flex-col lg:flex-row bg-white lg:rounded-[2.5rem] lg:shadow-2xl overflow-hidden min-h-screen lg:min-h-[90vh] relative">
+            <!-- Content Injected via Script -->
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_PASSWORD = "Motijheel2025Lalbagh";
+        const STORAGE_KEY = 'motijheel_orders_v2';
+        const CONTACT_NUMBER = "+91 8001365465";
+        
+        const COUNTRY_CODES = [
+            { code: "+91", flag: "🇮🇳", name: "India" },
+            { code: "+880", flag: "🇧🇩", name: "Bangladesh" },
+            { code: "+971", flag: "🇦🇪", name: "UAE" },
+            { code: "+1", flag: "🇺🇸", name: "USA" }
+        ];
+
+        const isNonVeg = (item) => {
+            const nvKeywords = ['chicken', 'fish', 'prawn', 'mutton', 'egg', 'meat', 'pomfret', 'murgh', 'bhetki', 'katla', 'ilish', 'murgi', 'mangsho', 'devil'];
+            const lowerName = item.name.toLowerCase();
+            return nvKeywords.some(kw => lowerName.includes(kw));
+        };
+
+        const MENU_DATA = [
+            { id: 1, name: "Tomato & Basil Soup", price: 129, cat: "Soup" },
+            { id: 2, name: "Choice of Cream Soup", prices: [129, 149], type: 'C', cat: "Soup" },
+            { id: 3, name: "Carrot Almond Soup", prices: [129, 149], type: 'L', cat: "Soup" },
+            { id: 4, name: "Manchow Soup", prices: [129, 149], type: 'C', cat: "Soup" },
+            { id: 5, name: "Lemon Coriander Soup", prices: [129, 149], type: 'C', cat: "Soup" },
+            { id: 6, name: "Tom Yum Soup", prices: [129, 149], type: 'C', cat: "Soup" },
+            { id: 7, name: "Green Salad", price: 99, cat: "Salad" },
+            { id: 8, name: "Caesar Salad", prices: [169, 199], type: 'L', cat: "Salad" },
+            { id: 9, name: "Waldorf Salad", prices: [199, 239], type: 'L', cat: "Salad" },
+            { id: 10, name: "Greek Salad", prices: [189, 229], type: 'L', cat: "Salad" },
+            { id: 11, name: "Chicken Tikka Smoked Salad", price: 229, cat: "Salad" },
+            { id: 12, name: "Cheese Chickpeas Finger", price: 159, cat: "Small Bite" },
+            { id: 13, name: "French Fries", price: 139, cat: "Small Bite" },
+            { id: 14, name: "Nachos with Salsa", price: 169, cat: "Small Bite" },
+            { id: 15, name: "Pakoda", price: 129, cat: "Small Bite" },
+            { id: 16, name: "Kolkata Fish Fry", price: 199, cat: "Small Bite" },
+            { id: 17, name: "Fish Finger", price: 189, cat: "Small Bite" },
+            { id: 18, name: "Nawabi Devil", prices: [169, 189], type: 'C', cat: "Small Bite" },
+            { id: 19, name: "Chicken Pakoda", price: 169, cat: "Small Bite" },
+            { id: 20, name: "Ambi Paneer Tikka", price: 249, cat: "Appetizers" },
+            { id: 21, name: "Koraishuti Tikka", price: 229, cat: "Appetizers" },
+            { id: 22, name: "Malai Broccoli", price: 249, cat: "Appetizers" },
+            { id: 23, name: "Nawabi Moti Murgh Kebab", price: 289, cat: "Appetizers" },
+            { id: 24, name: "Siraji Galouti Kebab", price: 349, cat: "Appetizers" },
+            { id: 25, name: "Murgh Shahi Bhatina", price: 289, cat: "Appetizers" },
+            { id: 26, name: "Bhatti Ka Murgh Tikka", price: 279, cat: "Appetizers" },
+            { id: 27, name: "Gandharaj Murgh Tikka", price: 349, cat: "Appetizers" },
+            { id: 28, name: "Fish Mahi Tikka", price: 449, cat: "Appetizers" },
+            { id: 29, name: "Prawn Lasooni Tikka", price: 479, cat: "Appetizers" },
+            { id: 30, name: "Tandoori Arabian Pomfret", price: 499, cat: "Appetizers" },
+            { id: 31, name: "Crispy Chilli Baby Corn", price: 229, cat: "Appetizers" },
+            { id: 32, name: "Paneer 65", price: 249, cat: "Appetizers" },
+            { id: 33, name: "Soya Chilli Paneer", price: 239, cat: "Appetizers" },
+            { id: 34, name: "Wood Fire Chicken Chilli", price: 269, cat: "Appetizers" },
+            { id: 35, name: "Hunan Chicken", price: 279, cat: "Appetizers" },
+            { id: 36, name: "Tai Pai Kai", price: 279, cat: "Appetizers" },
+            { id: 37, name: "Thai Basil Chicken", price: 289, cat: "Appetizers" },
+            { id: 38, name: "Bamboo Cashewnut Chicken", price: 299, cat: "Appetizers" },
+            { id: 39, name: "Sweet & Spicy Crispy Chicken", price: 289, cat: "Appetizers" },
+            { id: 40, name: "Teriyaki Chicken", price: 289, cat: "Appetizers" },
+            { id: 41, name: "Chicken 65", price: 279, cat: "Appetizers" },
+            { id: 42, name: "Roasted Chicken in Chilli Plum Sauce", price: 299, cat: "Appetizers" },
+            { id: 43, name: "Pan Fried Chilli Fish", price: 349, cat: "Appetizers" },
+            { id: 44, name: "Fish in Tangy Mustard", price: 369, cat: "Appetizers" },
+            { id: 45, name: "Prawn Chilli Basil (Dry)", price: 479, cat: "Appetizers" },
+            { id: 46, name: "Choice of Raita", price: 129, cat: "Sides" },
+            { id: 47, name: "Plain Curd", price: 69, cat: "Sides" },
+            { id: 48, name: "Papad", price: 79, cat: "Sides" },
+            { id: 49, name: "Masala Peanut", price: 149, cat: "Sides" },
+            { id: 50, name: "Fried Cashewnuts", price: 249, cat: "Sides" },
+            { id: 51, name: "Dal Tadka", price: 149, cat: "Indian" },
+            { id: 52, name: "Dal Makhani", price: 179, cat: "Indian" },
+            { id: 53, name: "Yellow Dal Fry", price: 129, cat: "Indian" },
+            { id: 54, name: "Paneer (Makhani/Kadhai/Lababdar/Palak)", price: 249, cat: "Indian" },
+            { id: 55, name: "Tawa Veg", price: 229, cat: "Indian" },
+            { id: 56, name: "Aloo Do Pyaza", price: 199, cat: "Indian" },
+            { id: 57, name: "Butter Chicken", price: 289, cat: "Indian" },
+            { id: 58, name: "Chicken Bharta", price: 279, cat: "Indian" },
+            { id: 59, name: "Chicken Do Pyaza", price: 289, cat: "Indian" },
+            { id: 60, name: "Mutton (Kosha/Rogan Josh/Do Pyaza)", price: 479, cat: "Indian" },
+            { id: 61, name: "Prawn Butter Masala", price: 479, cat: "Indian" },
+            { id: 62, name: "Tandoor Roti", prices: [49, 59], type: 'L', cat: "Rice & Roti" },
+            { id: 63, name: "Naan", prices: [59, 69], type: 'L', cat: "Rice & Roti" },
+            { id: 64, name: "Stuffed Kulcha", price: 99, cat: "Rice & Roti" },
+            { id: 65, name: "Lachha Paratha", price: 59, cat: "Rice & Roti" },
+            { id: 66, name: "Steamed Rice", price: 99, cat: "Rice & Roti" },
+            { id: 67, name: "Veg Pulao", price: 169, cat: "Rice & Roti" },
+            { id: 68, name: "Basanti Pulao", price: 179, cat: "Rice & Roti" },
+            { id: 69, name: "Bengali Kaju Kishmish Pulao", price: 179, cat: "Rice & Roti" },
+            { id: 70, name: "Jeera Rice", price: 149, cat: "Rice & Roti" },
+            { id: 71, name: "Dum Biryani", prices: [149, 249], type: 'C', cat: "Rice & Roti" },
+            { id: 72, name: "Special Biryani", prices: [249, 399], type: 'C', cat: "Rice & Roti" },
+            { id: 73, name: "Sizzler Biryani", prices: [249, 399], type: 'C', cat: "Rice & Roti" },
+            { id: 74, name: "Narkel Diya Postor Bora", price: 259, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 75, name: "Jhuri Aloo Bhaja", price: 99, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 76, name: "Begun Bhaja", price: 99, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 77, name: "Aloo Posto", price: 179, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 78, name: "Phulkopir Roast", price: 179, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 79, name: "Channar Dalna", price: 239, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 80, name: "Plain Masoor Dal", price: 99, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 81, name: "Bhaja Moong Dal", price: 129, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 82, name: "Macher Matha Diye Moong Dal", price: 149, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 83, name: "Kacha Lanka Dhonepata Murgi", prices: [279, 379], type: 'D', cat: "Flavours of Bengal / Non-Veg" },
+            { id: 84, name: "Daab Murgi", prices: [289, 399], type: 'D', cat: "Flavours of Bengal / Non-Veg" },
+            { id: 85, name: "Kosha Murgi", prices: [249, 379], type: 'D', cat: "Flavours of Bengal / Non-Veg" },
+            { id: 86, name: "Borisaler Bhapa Murgi", prices: [289, 399], type: 'D', cat: "Flavours of Bengal / Non-Veg" },
+            { id: 87, name: "Kacha Lanka Mangsho", price: 399, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 88, name: "Morich Mangsho", price: 399, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 89, name: "Ilish Bhapa", price: 349, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 90, name: "Begun Ilish", price: 319, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 91, name: "Chingri Malai Curry", price: 449, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 92, name: "Bhetki Bhapa", price: 499, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 93, name: "Bhetki Paturi", price: 349, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 94, name: "Katla Kalia", price: 199, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 95, name: "Katla Bhapa", price: 229, cat: "Flavours of Bengal / Non-Veg" },
+            { id: 96, name: "Arrabiata Pasta", prices: [249, 299], type: 'L', cat: "Continental" },
+            { id: 97, name: "Mama Rossa Pasta", prices: [249, 299], type: 'L', cat: "Continental" },
+            { id: 98, name: "Creamy Cheese Sauce Pasta", prices: [259, 309], type: 'L', cat: "Continental" },
+            { id: 99, name: "Spaghetti Aglio e Olio", prices: [299, 349], type: 'L', cat: "Continental" },
+            { id: 100, name: "Au Gratin", prices: [339, 369], type: 'L', cat: "Continental" },
+            { id: 101, name: "Baked Pasta", prices: [299, 349], type: 'L', cat: "Continental" },
+            { id: 102, name: "Chicken Stroganoff", price: 359, cat: "Continental" },
+            { id: 103, name: "Cottage Cheese Steak Sizzler", price: 359, cat: "Continental" },
+            { id: 104, name: "Grilled Fish with Lemon Butter Sauce", price: 429, cat: "Continental" },
+            { id: 105, name: "Grilled Chicken Steak Sizzler", price: 349, cat: "Continental" },
+            { id: 106, name: "Classic Margherita Pizza", price: 249, cat: "Continental" },
+            { id: 107, name: "Paneer Makhni Pizza", price: 289, cat: "Continental" },
+            { id: 108, name: "BBQ Chicken Pizza", price: 329, cat: "Continental" },
+            { id: 109, name: "Chicken Makhani Pizza", price: 349, cat: "Continental" },
+            { id: 110, name: "Chinese Fried Rice", prices: [199, 249, 299], type: 'C', cat: "Asian" },
+            { id: 111, name: "Schezwan Fried Rice", prices: [219, 259, 319], type: 'C', cat: "Asian" },
+            { id: 112, name: "Burnt Garlic Fried Rice", prices: [219, 259, 319], type: 'C', cat: "Asian" },
+            { id: 113, name: "Singaporean Rice", prices: [219, 259, 319], type: 'C', cat: "Asian" },
+            { id: 114, name: "Mongolian Rice", prices: [249, 289, 349], type: 'C', cat: "Asian" },
+            { id: 115, name: "Hakka Noodles", prices: [199, 249, 299], type: 'C', cat: "Asian" },
+            { id: 116, name: "Chilli Garlic Hakka Noodles", prices: [219, 259, 319], type: 'C', cat: "Asian" },
+            { id: 117, name: "Schezwan Hakka Noodles", prices: [219, 259, 319], type: 'C', cat: "Asian" },
+            { id: 118, name: "Cantonese Noodles", prices: [249, 289, 349], type: 'C', cat: "Asian" },
+            { id: 119, name: "Pan Fried Noodles", prices: [249, 289, 349], type: 'C', cat: "Asian" },
+            { id: 120, name: "Mongolian Noodles", prices: [249, 289, 349], type: 'C', cat: "Asian" },
+            { id: 121, name: "Paneer in Sauce", price: 269, cat: "Asian" },
+            { id: 122, name: "Mushroom in Sauce", price: 249, cat: "Asian" },
+            { id: 123, name: "Chicken in Sauce", price: 279, cat: "Asian" },
+            { id: 124, name: "Fish in Sauce", price: 339, cat: "Asian" },
+            { id: 125, name: "Prawn in Sauce", price: 349, cat: "Asian" },
+            { id: 126, name: "Hot Chhanar Malpua", price: 119, cat: "Dessert" },
+            { id: 127, name: "Bengali Baked Rasgulla", price: 119, cat: "Dessert" },
+            { id: 128, name: "Blueberry Cheesecake", price: 159, cat: "Dessert" },
+            { id: 129, name: "Brownie", price: 119, cat: "Dessert" },
+            { id: 130, name: "Tutti Frutti Sundae", price: 139, cat: "Dessert" },
+            { id: 131, name: "Ice Cream", price: 99, cat: "Dessert" }
+        ];
+
+        const CATEGORIES = ["All", "Soup", "Salad", "Small Bite", "Appetizers", "Indian", "Rice & Roti", "Flavours of Bengal / Non-Veg", "Continental", "Asian", "Dessert"];
+
+        let state = {
+            view: 'welcome',
+            cart: [],
+            activeCategory: 'All',
+            countryCode: '+91',
+            phoneNumber: '',
+            roomNumber: '',
+            customizingItem: null,
+            activeOrderId: null,
+            trackPhone: '',
+            trackRoom: ''
+        };
+
+        const getOrders = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        const setOrders = (orders) => localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+
+        window.setState = (update) => {
+            state = { ...state, ...update };
+            render();
+        };
+
+        window.handleAddToCart = (item) => {
+            if (item.type) setState({ customizingItem: item });
+            else {
+                const variantLabel = isNonVeg(item) ? 'Non-Veg' : 'Veg';
+                addToCartFinal(item, item.price, variantLabel);
+            }
+        };
+
+        window.addToCartFinal = (item, price, variantLabel) => {
+            const cartId = `${item.id}-${variantLabel}`;
+            const existing = state.cart.find(i => i.cartId === cartId);
+            if (existing) {
+                existing.qty++;
+            } else {
+                state.cart.push({ ...item, price, variantLabel, cartId, qty: 1 });
+            }
+            setState({ customizingItem: null });
+        };
+
+        window.placeOrder = () => {
+            if (!state.roomNumber || state.phoneNumber.length < 5) return;
+            const orderId = "MOT-" + Math.random().toString(36).substr(2, 4).toUpperCase();
+            const total = state.cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+            
+            const newOrder = {
+                id: orderId,
+                room: state.roomNumber,
+                phone: state.phoneNumber,
+                fullPhone: state.countryCode + state.phoneNumber,
+                items: [...state.cart],
+                total: Math.round(total * 1.05),
+                status: 0,
+                time: new Date().toLocaleString()
+            };
+
+            const orders = getOrders();
+            orders.unshift(newOrder);
+            setOrders(orders);
+            setState({ view: 'tracking', activeOrderId: orderId, cart: [] });
+        };
+
+        function render() {
+            const container = document.getElementById('main-content');
+            const cartCount = state.cart.reduce((a, b) => a + b.qty, 0);
+
+            if (state.view === 'welcome') {
+                container.innerHTML = `
+                    <div class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white relative">
+                        <div class="mb-12">
+                            <h1 class="text-5xl font-black tracking-tighter text-slate-900">Mahfil-e-Motijheel</h1>
+                            <p class="text-orange-500 font-bold text-xs uppercase tracking-[0.4em] mt-2">Royal Room Service</p>
+                        </div>
+                        <div class="w-full max-w-xs space-y-4">
+                            <button onclick="setState({view: 'user'})" class="w-full bg-slate-900 text-white p-7 rounded-[2.2rem] font-bold text-xl shadow-2xl">Order Now</button>
+                            <a href="https://drive.google.com/file/d/17oKaCzkIvZGyeUlRlzSUUTvhFUsu_qEH/view?usp=sharing" target="_blank" class="w-full bg-white border-2 border-slate-900 text-slate-900 p-6 rounded-[2rem] font-bold flex items-center justify-center gap-2">
+                                <i data-lucide="book-open" class="w-5 h-5"></i> View Menu
+                            </a>
+                            <button onclick="setState({view: 'order_lookup'})" class="w-full bg-slate-50 border p-6 rounded-[2rem] font-bold flex items-center justify-center gap-2 text-slate-600"><i data-lucide="map-pin" class="w-5 h-5"></i> Track My Order</button>
+                        </div>
+                        
+                        <div class="mt-20 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col items-center gap-2 w-full max-w-xs">
+                             <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">24/7 Support Desk</p>
+                             <a href="tel:${CONTACT_NUMBER}" class="text-lg font-black text-slate-900 flex items-center gap-2">
+                                <i data-lucide="phone" class="w-4 h-4 text-orange-500"></i> ${CONTACT_NUMBER}
+                             </a>
+                        </div>
+
+                        <!-- Shield Access Point -->
+                        <button onclick="setState({view: 'login'})" class="absolute bottom-8 right-8 text-slate-200 hover:text-slate-900 transition-all p-4">
+                            <i data-lucide="shield" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+                `;
+            } else if (['user', 'checkout', 'tracking', 'order_lookup'].includes(state.view)) {
+                const isStatus = ['tracking', 'order_lookup'].includes(state.view);
+                
+                container.innerHTML = `
+                    <div class="flex-1 flex flex-col h-full bg-white">
+                        <header class="p-6 border-b sticky top-0 bg-white z-40">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 onclick="setState({view: 'welcome'})" class="font-black text-2xl cursor-pointer">Mahfil</h2>
+                                <div class="flex bg-slate-100 p-1 rounded-2xl">
+                                    <button onclick="setState({view: 'user'})" class="px-5 py-2 rounded-xl text-xs font-bold ${!isStatus ? 'bg-white shadow-sm' : 'text-slate-400'}">Menu</button>
+                                    <button onclick="setState({view: 'order_lookup'})" class="px-5 py-2 rounded-xl text-xs font-bold ${isStatus ? 'bg-white shadow-sm' : 'text-slate-400'}">Status</button>
+                                </div>
+                            </div>
+                            ${!isStatus ? `
+                                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                                    ${CATEGORIES.map(c => `
+                                        <button onclick="setState({activeCategory: '${c}'})" class="whitespace-nowrap px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider border transition-all ${state.activeCategory === c ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-100'}">${c}</button>
+                                    `).join('')}
+                                </div>
+                            `:''}
+                        </header>
+
+                        <main class="flex-1 overflow-y-auto p-6 ${state.view === 'checkout' ? 'pb-10' : 'pb-32'}">
+                            ${state.view === 'user' ? `
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    ${MENU_DATA.filter(m => state.activeCategory === 'All' || m.cat === state.activeCategory).map(item => {
+                                        const nv = isNonVeg(item);
+                                        return `
+                                        <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex justify-between items-center shadow-sm relative overflow-hidden group">
+                                            <div class="flex items-center gap-4">
+                                                <div class="${nv ? 'non-veg-icon' : 'veg-icon'} flex-shrink-0">
+                                                    <span class="dot ${nv ? 'bg-red-600' : 'bg-green-600'}"></span>
+                                                </div>
+                                                <div>
+                                                    <h3 class="font-bold text-slate-900 text-lg leading-tight">${item.name}</h3>
+                                                    <div class="flex items-center gap-2 mt-1">
+                                                        <p class="text-orange-600 font-black text-sm">₹${item.price || item.prices[0]}${item.type ? '+' : ''}</p>
+                                                        <span class="text-[9px] font-bold text-slate-300 uppercase tracking-tighter">${item.cat}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button onclick="handleAddToCart(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="p-5 bg-slate-50 rounded-2xl group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                                <i data-lucide="plus" class="w-6 h-6"></i>
+                                            </button>
+                                        </div>
+                                    `}).join('')}
+                                </div>
+                            ` : ''}
+
+                            ${state.view === 'checkout' ? `
+                                <div class="max-w-xl mx-auto space-y-8">
+                                    <div class="bg-slate-50 p-8 rounded-[3rem] space-y-4">
+                                        <h3 class="text-lg font-black px-2">Delivery Details</h3>
+                                        <input type="text" placeholder="Room Number (e.g. 402)" oninput="state.roomNumber=this.value" class="w-full p-6 bg-white border rounded-[2rem] outline-none">
+                                        <div class="flex gap-2">
+                                            <select onchange="state.countryCode=this.value" class="p-6 bg-white border rounded-[2rem] font-bold">
+                                                ${COUNTRY_CODES.map(c => `<option value="${c.code}" ${state.countryCode===c.code?'selected':''}>${c.flag} ${c.code}</option>`).join('')}
+                                            </select>
+                                            <input type="tel" placeholder="Mobile Number" oninput="state.phoneNumber=this.value" class="flex-1 p-6 bg-white border rounded-[2rem] outline-none">
+                                        </div>
+                                    </div>
+                                    <div class="bg-slate-900 text-white p-8 rounded-[3rem]">
+                                        <p class="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-6">Order Summary</p>
+                                        <div class="space-y-4">
+                                            ${state.cart.map(i => `
+                                                <div class="flex justify-between items-center text-sm">
+                                                    <div>
+                                                        <span class="font-bold">${i.qty}x</span> ${i.name}
+                                                        <p class="text-[10px] opacity-40 uppercase tracking-widest font-black">${i.variantLabel}</p>
+                                                    </div>
+                                                    <span class="font-black">₹${i.price * i.qty}</span>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                        <div class="mt-8 pt-8 border-t border-white/10 flex justify-between items-center">
+                                            <span class="font-bold opacity-60">Total (incl. GST)</span>
+                                            <span class="text-3xl font-black text-orange-400">₹${Math.round(state.cart.reduce((a,b)=>a+(b.price*b.qty),0)*1.05)}</span>
+                                        </div>
+                                    </div>
+                                    <button onclick="placeOrder()" class="w-full bg-orange-500 text-white p-7 rounded-[2.5rem] font-black text-xl shadow-xl hover:bg-orange-600 transition-all">Confirm Order</button>
+                                </div>
+                            ` : ''}
+
+                            ${state.view === 'order_lookup' ? `
+                                <div class="max-w-md mx-auto space-y-12 py-10">
+                                    <div class="space-y-4 text-center">
+                                        <p class="font-bold text-slate-400 text-xs uppercase tracking-widest">Order ID Tracking</p>
+                                        <input type="text" id="track-id" placeholder="MOT-XXXX" class="w-full p-6 bg-slate-50 border rounded-[2rem] text-center font-bold text-xl uppercase">
+                                        <button onclick="const id=document.getElementById('track-id').value.toUpperCase(); if(getOrders().find(x=>x.id===id)) setState({activeOrderId:id, view:'tracking'})" class="w-full bg-slate-900 text-white p-6 rounded-[2rem] font-bold">Track Order</button>
+                                    </div>
+                                    <div class="relative h-px bg-slate-100 flex items-center justify-center">
+                                        <span class="bg-white px-4 text-slate-300 text-[10px] font-bold uppercase">Or lookup by room</span>
+                                    </div>
+                                    <div class="space-y-4">
+                                        <input type="text" placeholder="Room Number" oninput="state.trackRoom=this.value" class="w-full p-6 bg-slate-50 border rounded-[2rem] text-center">
+                                        <input type="tel" placeholder="Mobile Number" oninput="state.trackPhone=this.value" class="w-full p-6 bg-slate-50 border rounded-[2rem] text-center">
+                                        <button onclick="const o=getOrders().find(x=>x.room===state.trackRoom && x.phone===state.trackPhone); if(o) setState({activeOrderId:o.id, view:'tracking'})" class="w-full bg-slate-200 text-slate-900 p-6 rounded-[2rem] font-bold">Find My Order</button>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            ${state.view === 'tracking' ? `
+                                <div class="flex flex-col items-center p-4">
+                                    <div class="success-accent w-full max-w-sm rounded-[3rem] p-8 text-white mb-8 text-center shadow-2xl">
+                                        <p class="text-[10px] uppercase font-black tracking-widest opacity-70 mb-2">Order Confirmed</p>
+                                        <h2 class="text-4xl font-black mb-1">${state.activeOrderId}</h2>
+                                        <p class="text-xs opacity-80">Room ${getOrders().find(o=>o.id===state.activeOrderId)?.room}</p>
+                                    </div>
+                                    ${(()=>{
+                                        const order = getOrders().find(o => o.id === state.activeOrderId);
+                                        const steps = ["Received", "Preparing", "On the Way", "Delivered"];
+                                        return `
+                                            <div class="w-full max-w-sm bg-white rounded-[3rem] p-10 border shadow-lg text-center">
+                                                <h3 class="text-2xl font-black mb-10 text-slate-900">${steps[order.status]}</h3>
+                                                <div class="space-y-8 text-left relative px-4">
+                                                    ${steps.map((s, idx) => `
+                                                        <div class="flex items-center gap-6">
+                                                            <div class="w-10 h-10 rounded-full border-4 border-white shadow-lg flex items-center justify-center ${order.status >= idx ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-300'}">
+                                                                ${order.status >= idx ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}
+                                                            </div>
+                                                            <span class="font-bold text-sm ${order.status === idx ? 'text-orange-600' : 'text-slate-300'}">${s}</span>
+                                                        </div>
+                                                    `).join('')}
+                                                </div>
+                                                <div class="mt-12 pt-8 border-t border-slate-50">
+                                                     <p class="text-[10px] font-black uppercase text-slate-300 mb-2">Assistance</p>
+                                                     <a href="tel:${CONTACT_NUMBER}" class="font-black text-slate-900 flex items-center justify-center gap-2">
+                                                        <i data-lucide="phone" class="w-4 h-4 text-orange-500"></i> ${CONTACT_NUMBER}
+                                                     </a>
+                                                </div>
+                                                <button onclick="setState({view:'user'})" class="mt-8 text-slate-400 font-bold hover:text-slate-900 transition-colors">Order More</button>
+                                            </div>
+                                        `;
+                                    })()}
+                                </div>
+                            ` : ''}
+                        </main>
+
+                        ${!['checkout'].includes(state.view) ? `
+                            <footer class="p-8 text-center bg-slate-50 mt-auto">
+                                <button onclick="setState({view: 'login'})" class="text-slate-300 text-[10px] font-bold uppercase tracking-widest hover:text-slate-900 transition-colors">
+                                    <i data-lucide="shield" class="w-3 h-3 inline mr-1"></i> Staff Login
+                                </button>
+                            </footer>
+                        ` : ''}
+
+                        ${state.view === 'user' && cartCount > 0 ? `
+                            <div class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-lg z-50">
+                                <button onclick="setState({view: 'checkout'})" class="w-full bg-slate-900 text-white p-7 rounded-[2.5rem] flex justify-between items-center shadow-2xl font-black">
+                                    <span>${cartCount} Dishes Selected</span>
+                                    <span class="flex items-center gap-2">Review Order <i data-lucide="arrow-right" class="w-5 h-5"></i></span>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else if (['login', 'admin'].includes(state.view)) {
+                const orders = getOrders();
+                const totalRevenue = orders.reduce((acc, o) => acc + o.total, 0);
+
+                container.innerHTML = `
+                    <div class="flex-1 bg-slate-950 text-white flex flex-col">
+                        ${state.view === 'login' ? `
+                            <div class="flex-1 flex flex-col items-center justify-center p-8">
+                                <h2 class="text-3xl font-black mb-8 flex items-center gap-3">
+                                    <i data-lucide="shield-check" class="text-orange-500"></i> Staff Portal
+                                </h2>
+                                <input id="admin-pwd" type="password" placeholder="Enter PIN" class="w-full max-w-xs bg-white/10 p-6 rounded-[2rem] text-center text-xl mb-4 outline-none border border-transparent focus:border-orange-500">
+                                <div class="flex flex-col gap-4 w-full max-w-xs">
+                                    <button onclick="if(document.getElementById('admin-pwd').value==='${ADMIN_PASSWORD}') setState({view:'admin'})" class="w-full bg-orange-500 text-white p-6 rounded-[2rem] font-black">Verify PIN</button>
+                                    <button onclick="setState({view:'welcome'})" class="w-full bg-white/5 text-slate-400 p-6 rounded-[2rem] font-bold">Back to Menu</button>
+                                </div>
+                            </div>
+                        ` : `
+                            <header class="p-8 border-b border-white/10 bg-slate-950 sticky top-0 z-50">
+                                <div class="flex justify-between items-center mb-8">
+                                    <div>
+                                        <h2 class="font-black text-2xl">Kitchen Hub</h2>
+                                        <p class="text-orange-500 text-[10px] font-black uppercase tracking-widest">LIVE SERVICE PORTAL</p>
+                                    </div>
+                                    <button onclick="setState({view:'welcome'})" class="p-4 bg-white/5 rounded-full hover:bg-red-500/20 hover:text-red-500 transition-all"><i data-lucide="power" class="w-5 h-5"></i></button>
+                                </div>
+                                
+                                <!-- Revenue Stats Bar -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-white/5 p-6 rounded-3xl border border-white/5">
+                                        <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Shift Orders</p>
+                                        <p class="text-3xl font-black text-white">${orders.length}</p>
+                                    </div>
+                                    <div class="bg-orange-500/10 p-6 rounded-3xl border border-orange-500/20">
+                                        <p class="text-[9px] font-black text-orange-500/60 uppercase tracking-widest mb-1">Shift Revenue</p>
+                                        <p class="text-3xl font-black text-orange-500">₹${totalRevenue.toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            </header>
+
+                            <div class="flex-1 overflow-y-auto p-8 space-y-6">
+                                ${orders.length === 0 ? '<div class="h-64 flex items-center justify-center text-slate-500 font-bold italic">Waiting for incoming orders...</div>' : ''}
+                                ${orders.map(o => `
+                                    <div class="bg-white/5 p-8 rounded-[3rem] border border-white/10 shadow-xl">
+                                        <div class="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
+                                            <div>
+                                                <div class="flex items-center gap-3 mb-1">
+                                                    <span class="bg-orange-500 text-white px-4 py-1 rounded-full text-[10px] font-black tracking-widest uppercase">Room ${o.room}</span>
+                                                    <h4 class="font-black text-xl">${o.id}</h4>
+                                                </div>
+                                                <p class="text-slate-400 font-bold text-xs">${o.fullPhone} • ${o.time}</p>
+                                            </div>
+                                            <div class="flex bg-black/40 p-1 rounded-2xl gap-1 w-full md:w-auto overflow-x-auto no-scrollbar">
+                                                ${["New", "Prep", "Way", "Done"].map((s, idx) => `
+                                                    <button onclick="const all=getOrders(); const i=all.findIndex(x=>x.id==='${o.id}'); all[i].status=${idx}; setOrders(all); render();" 
+                                                        class="flex-1 md:flex-none px-4 py-2 rounded-xl transition-all ${o.status === idx ? 'bg-orange-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'} font-black text-[9px] uppercase tracking-tighter">
+                                                        ${s}
+                                                    </button>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                        <div class="space-y-3 pt-6 border-t border-white/5">
+                                            ${o.items.map(i => `
+                                                <div class="flex justify-between items-center">
+                                                    <div class="flex items-center gap-3">
+                                                        <span class="w-6 h-6 flex items-center justify-center bg-white/10 rounded-lg text-xs font-black">${i.qty}</span>
+                                                        <span class="text-slate-200 font-bold">${i.name}</span>
+                                                    </div>
+                                                    <span class="text-[9px] font-black px-3 py-1 bg-white/5 rounded-full text-slate-500 uppercase">${i.variantLabel}</span>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                        <div class="mt-6 flex justify-between items-center">
+                                            <button onclick="if(confirm('Delete order ${o.id}?')) { const all=getOrders().filter(x=>x.id!=='${o.id}'); setOrders(all); render(); }" class="text-red-500/50 hover:text-red-500 text-[10px] font-black uppercase tracking-widest">Remove Order</button>
+                                            <div class="text-right">
+                                                <p class="text-[9px] font-bold text-slate-500 uppercase">Total Bill</p>
+                                                <p class="text-xl font-black text-orange-400">₹${o.total}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `}
+                    </div>
+                `;
+            }
+
+            // MODALS (Item Customization)
+            if (state.customizingItem) {
+                const item = state.customizingItem;
+                const modal = document.createElement('div');
+                modal.className = "fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-6 modal-overlay";
+                
+                let opts = [];
+                if (item.type === 'D') opts = ["Broiler", "Desi"];
+                else if (item.type === 'L') opts = ["Standard", "Large"];
+                else if (item.type === 'C') opts = item.prices.length === 3 ? ["Veg", "Chicken", "Mixed"] : ["Veg", "Chicken"];
+
+                modal.innerHTML = `
+                    <div class="bg-white w-full max-w-lg rounded-t-[3rem] md:rounded-[3rem] p-10 animate-slide-up shadow-2xl">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-3">
+                                <div class="${isNonVeg(item) ? 'non-veg-icon' : 'veg-icon'} scale-110">
+                                    <span class="dot ${isNonVeg(item) ? 'bg-red-600' : 'bg-green-600'}"></span>
+                                </div>
+                                <h2 class="text-3xl font-black leading-none">${item.name}</h2>
+                            </div>
+                            <button onclick="setState({customizingItem: null})" class="p-2 bg-slate-100 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+                        </div>
+                        <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mb-10">Select Option</p>
+                        <div class="space-y-4 mb-8">
+                            ${opts.map((opt, idx) => `
+                                <button onclick="addToCartFinal(${JSON.stringify(item).replace(/"/g, '&quot;')}, ${item.prices[idx]}, '${opt}'); document.querySelector('.modal-overlay').remove()" class="group w-full flex justify-between items-center p-7 rounded-[2rem] border-2 border-slate-100 hover:border-orange-500 hover:bg-orange-50 transition-all font-black text-lg">
+                                    <span>${opt}</span>
+                                    <span class="text-orange-600">₹${item.prices[idx]}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            lucide.createIcons();
+        }
+
+        render();
+    </script>
+    <style>
+        @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    </style>
+</body>
+</html>
